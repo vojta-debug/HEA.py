@@ -134,8 +134,8 @@ if st.button("🚀 Spustit optimalizaci"):
         # Iterace po 1 % (krok 1). 
         for sc in range(10, 101, 1): # Sc od 10 do 100
             for mg in range(0, 100 - sc + 1, 1):
-                for ti in range(0, 100 - sc - mg + 1, 1):
-                    zn = 100 - sc - mg - ti
+                for ti in range(10, 100 - sc - mg + 1, 1):
+                    for zn in range(10, 100 - sc - mg - ti + 1, 1):
                     
                     comp = {'Mg': mg/100, 'Sc': sc/100, 'Ti': ti/100, 'Zn': zn/100}
                     ds, dh, cur_delta, cur_omega = calculate_hea_properties(comp)
