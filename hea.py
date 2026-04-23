@@ -1,41 +1,66 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
 
 # --- NASTAVENÍ STRÁNKY ---
-st.set_page_config(page_title="HEA Analýza", layout="centered")
-st.title("🔬 Analýza stability lehkých slitin (HEA)")
-st.write("Tato aplikace počítá vliv koncentrace vybraného prvku na stabilitu slitiny Mg-Sc-Ti-Zn.")
+st.set_page_config(page_title="HEA Kalkulačka", layout="centered")
+st.title("🔬 Výpočet parametrů slitiny Mg-Sc-Ti-Zn")
+st.write("Upravte zastoupení prvků (v %) a aplikace okamžitě přepočítá hodnoty Delta a Omega.")
 
-# --- KONFIGURACE A DATA PRO LEHKÉ SLITINY ---
+# --- DATA (BEZ KŘEMÍKU) ---
 ELEMENT_DATA = {
-    'Mg': {'r': 1.60, 'Tm': 923, 'chi': 1.31},
-    'Sc': {'r': 1.62, 'Tm': 1814, 'chi': 1.36},
-    'Ti': {'r': 1.47, 'Tm': 1941, 'chi': 1.54},
-    'Zn': {'r': 1.34, 'Tm': 693, 'chi': 1.65},
-    'Si': {'r': 1.18, 'Tm': 1687, 'chi': 1.90}
+    'Mg': {'r': 1.60, 'Tm': 923},
+    'Sc': {'r': 1.62, 'Tm': 1814},
+    'Ti': {'r': 1.47, 'Tm': 1941},
+    'Zn': {'r': 1.34, 'Tm': 693}
 }
 
+# Entalpie míšení (pouze relevantní dvojice)
 MIXING_ENTHALPY = {
-    ('Mg', 'Sc'): 0, ('Mg', 'Ti'): 16, ('Mg', 'Zn'): -4, ('Mg', 'Si'): -7,
-    ('Sc', 'Ti'): 0, ('Sc', 'Zn'): -13, ('Sc', 'Si'): -60,
-    ('Ti', 'Zn'): -5, ('Ti', 'Si'): -45,
-    ('Zn', 'Si'): 7
+    ('Mg', 'Sc'): 0, ('Mg', 'Ti'): 16, ('Mg', 'Zn'): -4,
+    ('Sc', 'Ti'): 0, ('Sc', 'Zn'): -13,
+    ('Ti', 'Zn'): -5
 }
 
-def calculate_hea_properties(composition):
-    elements = list(composition.keys())
-    x = np.array([composition[el] for el in elements])
-    x = x / np.sum(x)
+# --- FORMULÁŘ PRO VSTUPY ---
+st.subheader("Složení slitiny")
+col1, col2 = st.columns(2)
 
+with col1:
+    c_mg = st.slider("Hořčík (Mg) %", 0, 100, 25)
+    c_sc = st.slider("Skandium (Sc) %", 0, 100, 25)
+with col2:
+    c_ti = st.slider("Titan (Ti) %", 0, 100, 25)
+    c_zn = st.slider("Zinek (Zn) %", 0, 100, 25)
+
+# Celková suma a normalizace
+total = c_mg + c_sc + c_ti + c_zn
+
+if total == 0:
+    st.error("Součet procent nesmí být nula!")
+else:
+    # Převod na zlomky (aby součet byl vždy 1.0)
+    comp = {
+        'Mg': c_mg / total,
+        'Sc': c_sc / total,
+        'Ti': c_ti / total,
+        'Zn': c_zn / total
+    }
+
+    # --- VÝPOČET ---
+    elements = list(comp.keys())
+    x = np.array([comp[el] for el in elements])
     r = np.array([ELEMENT_DATA[el]['r'] for el in elements])
     tm = np.array([ELEMENT_DATA[el]['Tm'] for el in elements])
 
+    # 1. dS_mix (Entropie)
     R = 8.314
     ds_mix = -R * np.sum(x * np.log(x + 1e-12))
+
+    # 2. Delta (Velikostní nesoulad)
     r_avg = np.sum(x * r)
     delta = np.sqrt(np.sum(x * (1 - r / r_avg) ** 2)) * 100
 
+    # 3. dH_mix (Entalpie)
     dh_mix = 0
     for i in range(len(elements)):
         for j in range(i + 1, len(elements)):
@@ -43,53 +68,27 @@ def calculate_hea_properties(composition):
             h_ij = MIXING_ENTHALPY.get(pair, 0)
             dh_mix += 4 * h_ij * x[i] * x[j]
 
+    # 4. Omega (Stabilita)
     tm_avg = np.sum(x * tm)
     omega = (tm_avg * ds_mix) / (abs(dh_mix * 1000) + 1e-12)
 
-    return ds_mix, dh_mix, delta, omega
+    # --- ZOBRAZENÍ VÝSLEDKŮ ---
+    st.divider()
+    if total != 100:
+        st.info(f"Poznámka: Součet zadání je {total}%, hodnoty byly automaticky přepočítány na 100%.")
 
-# --- GENEROVÁNÍ ANALÝZY A GRAFU ---
-def run_sensitivity_analysis(target_element='Si'):
-    others = [e for e in ELEMENT_DATA.keys() if e != target_element]
-    concentrations = np.linspace(0, 0.25, 50)
-    results = {'delta': [], 'omega': [], 'dh_mix': []}
-
-    for c in concentrations:
-        remaining_share = (1.0 - c) / len(others)
-        comp = {target_element: c}
-        for el in others:
-            comp[el] = remaining_share
-
-        ds, dh, delta, omega = calculate_hea_properties(comp)
-        results['delta'].append(delta)
-        results['omega'].append(omega)
-        results['dh_mix'].append(dh)
-
-    # Vykreslení grafu
-    fig, ax1 = plt.subplots(figsize=(10, 6))
-
-    color = 'tab:red'
-    ax1.set_xlabel(f'Koncentrace {target_element} (atomární zlomek)')
-    ax1.set_ylabel('Delta (velikostní nesoulad %)', color=color)
-    ax1.plot(concentrations, results['delta'], color=color, linewidth=2, label='Delta')
-    ax1.tick_params(axis='y', labelcolor=color)
-    ax1.axhline(y=6.6, color='red', linestyle='--', alpha=0.3, label='Limit pro SS (6.6%)')
-
-    ax2 = ax1.twinx()
-    color = 'tab:blue'
-    ax2.set_ylabel('Parametr Omega (stabilita)', color=color)
-    ax2.plot(concentrations, results['omega'], color=color, linewidth=2, label='Omega')
-    ax2.tick_params(axis='y', labelcolor=color)
-    ax2.axhline(y=1.1, color='blue', linestyle='--', alpha=0.3, label='Limit pro SS (1.1)')
-
-    plt.title(f'Vliv {target_element} na stabilitu slitiny Mg-Sc-Ti-Zn')
-    fig.tight_layout()
-    plt.grid(alpha=0.2)
+    res_col1, res_col2 = st.columns(2)
     
-    # ZOBRAZENÍ VE STREAMLITU (náhrada za plt.show())
-    st.pyplot(fig)
+    with res_col1:
+        st.metric(label="Delta (δ)", value=f"{delta:.2f} %")
+        st.caption("Limit pro pevné roztoky: < 6.6 %")
 
-if __name__ == "__main__":
-    # Výběr prvku přímo na webu
-    target = st.selectbox("Vyber prvek pro analýzu citlivosti:", list(ELEMENT_DATA.keys()))
-    run_sensitivity_analysis(target)
+    with res_col2:
+        st.metric(label="Parametr Omega (Ω)", value=f"{omega:.2f}")
+        st.caption("Stabilní roztok při: > 1.1")
+
+    # Interpretace výsledků
+    if delta < 6.6 and omega > 1.1:
+        st.success("✅ Tato kombinace má vysoký předpoklad pro vznik stabilního pevného roztoku.")
+    else:
+        st.warning("⚠️ Tato kombinace pravděpodobně vytvoří vícefázovou strukturu nebo intermetalika.")
