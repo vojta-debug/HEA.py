@@ -31,11 +31,10 @@ def calculate_hea_properties(comp):
     elements = list(comp.keys())
     x = np.array([comp[el] for el in elements])
     
-    # Ochrana proti dělení nulou, pokud by všechno bylo 0
     if np.sum(x) == 0:
         return 0, 0, 0, 0
 
-    x = x / np.sum(x) # Normalizace na zlomek 0-1
+    x = x / np.sum(x)
     r = np.array([ELEMENT_DATA[el]['r'] for el in elements])
     tm = np.array([ELEMENT_DATA[el]['Tm'] for el in elements])
 
@@ -71,7 +70,6 @@ def atomic_to_weight(comp_at):
 st.title("🔬 Část 1: HEA Kalkulačka")
 st.write("Zadejte atomární procenta (at. %). Aplikace automaticky dopočítá hmotnostní procenta (wt. %) a stabilitu.")
 
-# Vstupní pole (brackets) místo posuvníků
 col1, col2, col3, col4 = st.columns(4)
 with col1: c_mg = st.number_input("Mg (at. %)", min_value=0.0, max_value=100.0, value=25.0, step=1.0)
 with col2: c_sc = st.number_input("Sc (at. %)", min_value=0.0, max_value=100.0, value=25.0, step=1.0)
@@ -83,13 +81,9 @@ total_at = c_mg + c_sc + c_ti + c_zn
 if total_at == 0:
     st.error("Součet atomárních procent nesmí být nula!")
 else:
-    # Přepočet na zlomky pro výpočet vlastností
     comp_fractions = {'Mg': c_mg / total_at, 'Sc': c_sc / total_at, 'Ti': c_ti / total_at, 'Zn': c_zn / total_at}
-    
-    # Výpočet hmotnostních procent
     wt_pct = atomic_to_weight({'Mg': c_mg, 'Sc': c_sc, 'Ti': c_ti, 'Zn': c_zn})
     
-    # Zobrazení hmotnostních procent přímo pod vstupy
     col1.caption(f"Hmotnostní: **{wt_pct['Mg']:.1f} %**")
     col2.caption(f"Hmotnostní: **{wt_pct['Sc']:.1f} %**")
     col3.caption(f"Hmotnostní: **{wt_pct['Ti']:.1f} %**")
@@ -98,7 +92,6 @@ else:
     if total_at != 100:
         st.info(f"💡 Součet zadaných atomárních % je {total_at} %. Pro výpočet byly hodnoty automaticky znormovány na 100 %.")
 
-    # Výpočet a zobrazení Delta a Omega
     ds, dh, delta, omega = calculate_hea_properties(comp_fractions)
     
     res_col1, res_col2 = st.columns(2)
@@ -119,31 +112,30 @@ else:
 st.divider()
 st.title("⚙️ Část 2: Hledání optimální slitiny")
 st.write("""
-Tato sekce projde tisíce kombinací a najde takovou, která:
+Tato sekce projde kombinace a najde takovou, která:
 1. Má **Delta < 6.6** a **Omega > 1.1** (stabilní pevný roztok).
-2. Obsahuje **minimum Skandia** (ale minimálně 10 at. %).
-3. Obsahuje **maximum Hořčíku**.
+2. Obsahuje **minimálně 10 at. % od Sc, Ti i Zn**.
+3. Má co **nejnižší podíl Skandia** a co **nejvyšší podíl Hořčíku**.
 """)
 
 if st.button("🚀 Spustit optimalizaci"):
-    with st.spinner("Iteruji přes všechny možné kombinace... (může to trvat pár vteřin)"):
+    with st.spinner("Iteruji přes všechny možné kombinace..."):
         best_comp = None
         best_score = -float('inf')
         best_props = None
         
-        # Iterace po 1 % (krok 1). 
-        for sc in range(10, 101, 1): # Sc od 10 do 100
-            for mg in range(0, 100 - sc + 1, 1):
-                for ti in range(10, 100 - sc - mg + 1, 1):
-                    for zn in range(10, 100 - sc - mg - ti + 1, 1):
+        # Iterace s novými pravidly: Sc, Ti, Zn musí být >= 10
+        # Maximální teoretická hodnota pro jeden prvek je 70 (100 - 10 - 10 - 10)
+        for sc in range(10, 71): 
+            for ti in range(10, 100 - sc - 10 + 1): 
+                for zn in range(10, 100 - sc - ti + 1): 
+                    mg = 100 - sc - ti - zn
                     
                     comp = {'Mg': mg/100, 'Sc': sc/100, 'Ti': ti/100, 'Zn': zn/100}
                     ds, dh, cur_delta, cur_omega = calculate_hea_properties(comp)
                     
-                    # Podmínky pro stabilní pevný roztok
                     if cur_delta < 6.6 and cur_omega > 1.1:
-                        # Skórovací systém: Chceme co nejvíc Mg a co nejméně Sc
-                        # Skóre = Mg - (velká penalizace za každý % Sc nad 10)
+                        # Skóre: maximum Mg, penalizace za Sc
                         score = mg - (sc * 10) 
                         
                         if score > best_score:
@@ -154,7 +146,6 @@ if st.button("🚀 Spustit optimalizaci"):
         if best_comp is not None:
             st.success("🎉 Nalezeno optimální složení!")
             
-            # Zobrazení výsledků optimalizace
             opt_wt = atomic_to_weight(best_comp)
             
             c1, c2, c3, c4 = st.columns(4)
@@ -165,4 +156,4 @@ if st.button("🚀 Spustit optimalizaci"):
             
             st.write(f"**Vypočtené parametry:** Delta = {best_props[0]:.2f} %, Omega = {best_props[1]:.2f}")
         else:
-            st.error("❌ Při zadaných kritériích (Sc >= 10%, stabilní roztok) neexistuje žádná vyhovující kombinace. Zkuste zmírnit limity.")
+            st.error("❌ Při zadaných kritériích (min. 10 % u Sc, Ti, Zn a stabilní roztok) neexistuje žádná vyhovující kombinace.")
