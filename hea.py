@@ -139,15 +139,15 @@ else:
     ds, dh, delta, omega = calculate_hea_properties(comp_fractions)
     
     res_col1, res_col2 = st.columns(2)
-    with res_col1: st.metric(label="Parametr δ (Nesoulad atomů ↓, ≤6,6)", value=f"{delta:.2f} %")
-    with res_col2: st.metric(label="Parametr Ω (Termodynamika vůči entalpii ↑, ≥1,1)", value=f"{omega:.2f}")
+    with res_col1: st.metric(label="Parametr δ (Nesoulad velikosti atomů ↓, ≤6,6)", value=f"{delta:.2f} %")
+    with res_col2: st.metric(label="Parametr Ω (Termodynamika entropie vůči entalpii ↑, ≥1,1)", value=f"{omega:.2f}")
 
 
 # ==========================================
 # ČÁST 2: AUTOMATICKÁ OPTIMALIZACE
 # ==========================================
 st.divider()
-st.title("Část 2: Hledání optimální slitiny")
+st.title("Optimalizace slitin")
 
 st.subheader("Nastavení optimalizace")
 st.write("Vyberte prvek k zafixování a nastavte teplotu slinování. Aplikace dopočítá zbytek pro dosažení nejvyšší stability.")
@@ -255,7 +255,7 @@ def render_image(image_path, caption, height_px=120):
 
 # Zde můžeš změnit výšku všech obrázků najednou (v pixelech)
 VYSKA = 120 
-st.write("Parametr δ (Nesoulad atomů)")
+st.write("Parametr δ (Nesoulad velikosti atomů)")
 # --- SKUPINA 1: Obrázky 1 + 2 ---
 col_v1, col_v2 = st.columns(2)
 with col_v1: 
@@ -264,7 +264,7 @@ with col_v2:
     render_image("2.png", "Průměrný atomový poloměr ve směsi", VYSKA)
 
 st.write("---")
-st.write("Parametr Ω (Termodynamika vůči entalpii)")
+st.write("Parametr Ω (Termodynamika entropie vůči entalpii)")
 # --- SKUPINA 2: Obrázky 3 + 4 + 5 ---
 col_v3, col_v4, col_v5 = st.columns(3)
 with col_v3: 
