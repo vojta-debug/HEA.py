@@ -18,6 +18,7 @@ MOLAR_MASS = {
     'Ti': 47.867,
     'Zn': 65.380
 }
+
 # z open quantum matherials database https://oqmd.org/materials/composition/Ti%20Zn
 MIXING_ENTHALPY = {
     ('Mg', 'Sc'): -4.15, ('Mg', 'Ti'): -0.19, ('Mg', 'Zn'): -10.81,
@@ -70,69 +71,42 @@ def predict_intermetallics(comp_at, delta, omega):
     """
     predictions = []
     
-    # 1. SUBSYSTÉM Sc - Zn (Velmi silná tendence)
+    # 1. SUBSYSTÉM Sc - Zn
     if comp_at['Sc'] > 3.0 and comp_at['Zn'] > 3.0:
         ratio_zn_sc = comp_at['Zn'] / (comp_at['Sc'] + 1e-5)
-        
         if 0.8 <= ratio_zn_sc <= 1.3:
-            predictions.append({
-                'pár': "Sc - Zn", 'fáze': "ScZn (ekviatomární)",
-                'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Poloha v diagramu odpovídá kubické fázi (typ CsCl). Mírná křehkost."
-            })
+            predictions.append({'pár': "Sc - Zn", 'fáze': "ScZn (ekviatomární)", 'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Kubická fáze (typ CsCl)."})
         elif 1.7 <= ratio_zn_sc <= 2.3:
-            predictions.append({
-                'pár': "Sc - Zn", 'fáze': "ScZn₂ (Lavesova fáze)",
-                'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Nacházíte se v oblasti vysoce křehké hexagonální Lavesovy fáze."
-            })
+            predictions.append({'pár': "Sc - Zn", 'fáze': "ScZn₂ (Lavesova fáze)", 'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Křehká hexagonální fáze."})
         elif 5.0 <= ratio_zn_sc <= 6.5:
-            predictions.append({
-                'pár': "Sc - Zn", 'fáze': "Sc₃Zn₁₇ nebo ScZn₁₂",
-                'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Vysoký přebytek zinku, precipitace intermetalik bohatých na Zn na hranicích zrn."
-            })
+            predictions.append({'pár': "Sc - Zn", 'fáze': "Sc₃Zn₁₇ nebo ScZn₁₂", 'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Přebytek zinku, precipitace."})
 
-    # 2. SUBSYSTÉM Mg - Zn (Nízkotající fáze)
+    # 2. SUBSYSTÉM Mg - Zn
     if comp_at['Mg'] > 3.0 and comp_at['Zn'] > 3.0:
         ratio_zn_mg = comp_at['Zn'] / (comp_at['Mg'] + 1e-5)
-        
         if 0.8 <= ratio_zn_mg <= 1.2:
-            predictions.append({
-                'pár': "Mg - Zn", 'fáze': "MgZn",
-                'pozn': f"Poměr Zn/Mg je {ratio_zn_mg:.2f}. Oblast střední stability."
-            })
+            predictions.append({'pár': "Mg - Zn", 'fáze': "MgZn", 'pozn': f"Poměr Zn/Mg je {ratio_zn_mg:.2f}. Střední stabilita."})
         elif 1.8 <= ratio_zn_mg <= 2.2:
-            predictions.append({
-                'pár': "Mg - Zn", 'fáze': "MgZn₂",
-                'pozn': f"Poměr Zn/Mg je {ratio_zn_mg:.2f}. Stabilní precipitát Lavesovy fáze, kritické zpevnění/křehnutí."
-            })
+            predictions.append({'pár': "Mg - Zn", 'fáze': "MgZn₂", 'pozn': f"Poměr Zn/Mg je {ratio_zn_mg:.2f}. Lavesova fáze, křehnutí."})
 
     # 3. SUBSYSTÉM Ti - Zn
     if comp_at['Ti'] > 3.0 and comp_at['Zn'] > 3.0:
         ratio_zn_ti = comp_at['Zn'] / (comp_at['Ti'] + 1e-5)
         if 1.8 <= ratio_zn_ti <= 3.2:
-            predictions.append({
-                'pár': "Ti - Zn", 'fáze': "TiZn₂ nebo TiZn₃",
-                'pozn': f"Poměr Zn/Ti je {ratio_zn_ti:.2f}. Možný vznik jehlicovitých intermetalik snižujících tažnost."
-            })
+            predictions.append({'pár': "Ti - Zn", 'fáze': "TiZn₂ nebo TiZn₃", 'pozn': f"Poměr Zn/Ti je {ratio_zn_ti:.2f}. Jehlicovitá intermetalika."})
 
-    # 4. SUBSYSTÉM Mg - Ti (Imiscibilita / Segregace)
+    # 4. SUBSYSTÉM Mg - Ti
     if comp_at['Mg'] > 5.0 and comp_at['Ti'] > 5.0:
-        # Vzhledem k vysoké kladné entalpii (+16 kJ/mol) netvoří intermetalika, ale vytlačují se
         if delta > 6.0 or omega < 1.0:
-            predictions.append({
-                'pár': "Mg - Ti", 'fáze': "Makroskopická segregace (likvace)",
-                'pozn': "Prvky se nesnášejí. Hrozí vznik oddělených oblastí čistého Mg a čistého Ti během slinování."
-            })
+            predictions.append({'pár': "Mg - Ti", 'fáze': "Segregace (likvace)", 'pozn': "Prvky se nesnášejí. Hrozí rozpad na čisté oblasti Mg a Ti."})
 
-    # Filtrování: Intermetalika se reálně vyloučí pouze tehdy, pokud celková stabilita HEA klesne
-    # (Tzn. buď je příliš velký mřížkový nesoulad delta, nebo příliš nízká teplota/entropie omega)
     actual_risks = []
     for p in predictions:
-        # Pokud je systém na hranici stability tuhého roztoku
         if delta > 5.5 or omega < 1.5:
-            actual_results = p
-            actual_risks.append(actual_results)
+            actual_risks.append(p)
             
     return actual_risks
+
 
 # ==========================================
 # ČÁST 1: MANUÁLNÍ KALKULAČKA
@@ -160,13 +134,14 @@ else:
     col4.caption(f"Hmotnostní: **{wt_pct['Zn']:.1f} %**")
 
     if total_at != 100:
-        st.info(f"💡 Součet zadaných atomárních % je {total_at} %. Pro výpočet byly hodnoty automaticky znormovány na 100 %.")
+        st.info(f"💡 Součet zadaných atomárních % je {total_at} %. Pro výpočet byly automaticky znormovány na 100 %.")
 
     ds, dh, delta, omega = calculate_hea_properties(comp_fractions)
     
     res_col1, res_col2 = st.columns(2)
-    with res_col1: st.metric(label="Parametr δ (Parametr nesouladu velikostí atomů ↓, ≤6,6)", value=f"{delta:.2f} %")
-    with res_col2: st.metric(label="Parametr Ω (Termodynamický vliv entropie vůči entalpii ↑, ≥1,1)", value=f"{omega:.2f}")
+    with res_col1: st.metric(label="Parametr δ (Nesoulad atomů ↓, ≤6,6)", value=f"{delta:.2f} %")
+    with res_col2: st.metric(label="Parametr Ω (Termodynamika vůči entalpii ↑, ≥1,1)", value=f"{omega:.2f}")
+
 
 # ==========================================
 # ČÁST 2: AUTOMATICKÁ OPTIMALIZACE
@@ -175,7 +150,7 @@ st.divider()
 st.title("Část 2: Hledání optimální slitiny")
 
 st.subheader("Nastavení optimalizace")
-st.write("Vyberte prvek k zafixování a nastavte teplotu slinování. Aplikace dopočítá zbytek pro dosažení nejvyšší stability (Max Omega, Min Delta).")
+st.write("Vyberte prvek k zafixování a nastavte teplotu slinování. Aplikace dopočítá zbytek pro dosažení nejvyšší stability.")
 
 col_lock1, col_lock2, col_lock3 = st.columns(3)
 with col_lock1:
@@ -204,7 +179,6 @@ if st.button("Spustit optimalizaci"):
                 comp_at = {locked_element: locked_value, el1: v1, el2: v2, el3: v3}
                 comp_frac = {k: v/100 for k, v in comp_at.items()}
                 
-                # Výpočet pro slinovací teplotu i pro základní teplotu (Tm_avg)
                 ds, dh, cur_delta, cur_omega_sinter = calculate_hea_properties(comp_frac, temp_k)
                 _, _, _, cur_omega_base = calculate_hea_properties(comp_frac, None)
                 
@@ -244,85 +218,11 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
             
             st.write(f"**Vypočtené parametry:** Delta = **{d:.2f} %** | Omega (základní) = **{o_base:.2f}** | Omega (při {temp_c} °C) = **{o_sinter:.2f}**")
             
-            st.markdown("##### Laboratorní navážka:")
-            st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
-
-elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
-    st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
-
-# --- ZOBRAZENÍ VÝSLEDKŮ A NAVÁŽKY ---
-if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
-    st.success("Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
-    st.divider()
-    
-    st.subheader("Výpočet laboratorní navážky")
-    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0, key="navazka_cast2")
-    
-    st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
-    for idx, res in enumerate(st.session_state['top_5_results']):
-        comp = res['comp']
-        d, o_sinter, o_base = res['props']
-        wt = atomic_to_weight(comp)
-        grams = calculate_grams(wt, total_mass)
-        
-        with st.expander(f"Varianta {idx + 1}: Mg {comp['Mg']} | Sc {comp['Sc']} | Ti {comp['Ti']} | Zn {comp['Zn']} (at. %)", expanded=(idx==0)):
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Hořčík (Mg)", f"{comp['Mg']} at. %", f"{wt['Mg']:.1f} wt. %", delta_color="off")
-            c2.metric("Skandium (Sc)", f"{comp['Sc']} at. %", f"{wt['Sc']:.1f} wt. %", delta_color="off")
-            c3.metric("Titan (Ti)", f"{comp['Ti']} at. %", f"{wt['Ti']:.1f} wt. %", delta_color="off")
-            c4.metric("Zinek (Zn)", f"{comp['Zn']} at. %", f"{wt['Zn']:.1f} wt. %", delta_color="off")
-            
-            st.write(f"**Vypočtené parametry:** Delta = **{d:.2f} %** | Omega (základní) = **{o_base:.2f}** | Omega (při {temp_c} °C) = **{o_sinter:.2f}**")
-            
-            # ---> TADY JE SPRÁVNÉ MÍSTO PRO PREDIKCI FÁZÍ <---
             opt_im = predict_intermetallics(comp, d, o_sinter)
             if opt_im:
                 st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
                 for f in opt_im:
                     st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
-            # --------------------------------------------------
-
-            st.markdown("##### Laboratorní navážka:")
-            st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
-
-elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
-    st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
-
-# ==========================================
-# ČÁST 3: POUŽITÉ VZORCE          
-#===========================================
-# ... zbytek tvého kódu s obrázky vzorců pokračuje normálně dál
-# --- ZOBRAZENÍ VÝSLEDKŮ A NAVÁŽKY ---
-if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
-    st.success("Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
-    st.divider()
-    
-    st.subheader("Výpočet laboratorní navážky")
-    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0)
-    
-    st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
-    for idx, res in enumerate(st.session_state['top_5_results']):
-        comp = res['comp']
-        d, o_sinter, o_base = res['props']
-        wt = atomic_to_weight(comp)
-        grams = calculate_grams(wt, total_mass)
-        
-        with st.expander(f"Varianta {idx + 1}: Mg {comp['Mg']} | Sc {comp['Sc']} | Ti {comp['Ti']} | Zn {comp['Zn']} (at. %)", expanded=(idx==0)):
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("Hořčík (Mg)", f"{comp['Mg']} at. %", f"{wt['Mg']:.1f} wt. %", delta_color="off")
-            c2.metric("Skandium (Sc)", f"{comp['Sc']} at. %", f"{wt['Sc']:.1f} wt. %", delta_color="off")
-            c3.metric("Titan (Ti)", f"{comp['Ti']} at. %", f"{wt['Ti']:.1f} wt. %", delta_color="off")
-            c4.metric("Zinek (Zn)", f"{comp['Zn']} at. %", f"{wt['Zn']:.1f} wt. %", delta_color="off")
-            
-            st.write(f"**Vypočtené parametry:** Delta = **{d:.2f} %** | Omega (základní) = **{o_base:.2f}** | Omega (při {temp_c} °C) = **{o_sinter:.2f}**")
-            
-            # ---> TADY JE SPRÁVNÉ MÍSTO PRO PREDIKCI FÁZÍ <---
-            opt_im = predict_intermetallics(comp, d, o_sinter)
-            if opt_im:
-                st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
-                for f in opt_im:
-                    st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
-            # --------------------------------------------------
 
             st.markdown("##### Laboratorní navážka:")
             st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
@@ -335,7 +235,6 @@ elif 'top_5_results' in st.session_state and not st.session_state['top_5_results
 #===========================================
 st.divider()
 st.title("Použité vzorce")
-#fotky
 st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)")
 st.image("2.png", caption="Průměrný atomový poloměr ve směsi")
 st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)")
