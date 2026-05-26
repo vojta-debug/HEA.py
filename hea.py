@@ -255,7 +255,7 @@ im_fases = predict_intermetallics({'Mg': c_mg, 'Sc': c_sc, 'Ti': c_ti, 'Zn': c_z
 
 st.divider()
 st.title("Pravděpodobnost vzniku případných intermetalik")
-opt_im = predict_intermetallics_advanced(comp, d, o_sinter)
+opt_im = predict_intermetallics(comp, d, o_sinter)
 
 if opt_im:
     st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
