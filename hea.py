@@ -63,7 +63,7 @@ def atomic_to_weight(comp_at):
 def calculate_grams(comp_wt, total_mass_g):
     return {el: (comp_wt[el] / 100) * total_mass_g for el in comp_wt}
 
-def predict_intermetallics_advanced(comp_at, delta, omega):
+def predict_intermetallics(comp_at, delta, omega):
     """
     Pokročilá predikce konkrétních fází na základě stechiometrických poměrů
     v jednotlivých oblastech binárních fázových diagramů.
