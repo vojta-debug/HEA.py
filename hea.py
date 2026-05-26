@@ -235,11 +235,31 @@ elif 'top_5_results' in st.session_state and not st.session_state['top_5_results
 #===========================================
 st.divider()
 st.title("Použité vzorce")
-st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)", height=200)
-st.image("2.png", caption="Průměrný atomový poloměr ve směsi", height=200)
-st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)", height=200)
-st.image("4.png", caption="Směšovací entropie", height=200)
-st.image("5.png", caption="Směšovací entalpie", height=200)
+
+# --- SKUPINA 1: Obrázky 1 + 2 ---
+col_v1, col_v2 = st.columns(2)
+with col_v1:
+    st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)", use_container_width=True)
+with col_v2:
+    st.image("2.png", caption="Průměrný atomový poloměr ve směsi", use_container_width=True)
+
+st.write("---")
+
+# --- SKUPINA 2: Obrázky 3 + 4 + 5 ---
+col_v3, col_v4, col_v5 = st.columns(3)
+with col_v3:
+    st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)", use_container_width=True)
+with col_v4:
+    st.image("4.png", caption="Směšovací entropie", use_container_width=True)
+with col_v5:
+    st.image("5.png", caption="Směšovací entalpie", use_container_width=True)
+
+st.write("---")
 st.write("Rozdíl v použité hodnotě teploty, viz níže - Omega (základní) vs Omega při ($T_{slinování}$)")
-st.image("6.png", caption="Teplota", height=200)
-st.image("7.png", caption="Teplota při slinování", height=200)
+
+# --- SKUPINA 3: Obrázky 6 + 7 ---
+col_v6, col_v7 = st.columns(2)
+with col_v6:
+    st.image("6.png", caption="Teplota", use_container_width=True)
+with col_v7:
+    st.image("7.png", caption="Teplota při slinování", use_container_width=True)
