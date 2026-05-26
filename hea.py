@@ -66,14 +66,14 @@ def calculate_grams(comp_wt, total_mass_g):
 #použité rovnice
 st.write("Použité vzorce")
 #fotky
-    st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)")
-        st.image("2.png", caption="Průměrný atomový poloměr ve směsi")
-            st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)")
-                st.image("4.png", caption="Směšovací entropie")
-                    st.image("5.png", caption="Směšovací entalpie")
+st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)")
+st.image("2.png", caption="Průměrný atomový poloměr ve směsi")
+st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)")
+st.image("4.png", caption="Směšovací entropie")
+st.image("5.png", caption="Směšovací entalpie")
 st.write("Rozdíl v použité hodnotě teploty, viz níže - Omega (základní) vs Omega při ($T_{slinování}$ °C)")
-                        st.image("6.png", caption="Teplota")
-                            st.image("7.png", caption="Teplota při slinování")
+st.image("6.png", caption="Teplota")
+st.image("7.png", caption="Teplota při slinování")
 # ==========================================
 # ČÁST 1: MANUÁLNÍ KALKULAČKA (Nezměněna)
 # ==========================================
