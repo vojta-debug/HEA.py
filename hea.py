@@ -255,7 +255,7 @@ def render_image(image_path, caption, height_px=120):
 
 # Zde můžeš změnit výšku všech obrázků najednou (v pixelech)
 VYSKA = 120 
-
+st.write("Parametr δ (Nesoulad atomů)"
 # --- SKUPINA 1: Obrázky 1 + 2 ---
 col_v1, col_v2 = st.columns(2)
 with col_v1: 
@@ -264,7 +264,7 @@ with col_v2:
     render_image("2.png", "Průměrný atomový poloměr ve směsi", VYSKA)
 
 st.write("---")
-
+st.write("Parametr Ω (Termodynamika vůči entalpii)")
 # --- SKUPINA 2: Obrázky 3 + 4 + 5 ---
 col_v3, col_v4, col_v5 = st.columns(3)
 with col_v3: 
