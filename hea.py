@@ -250,16 +250,90 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
 elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
     st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
 
-# Zavolání nové funkce (dosadíš do ní aktuální složení, deltu a omegu)
-im_fases = predict_intermetallics({'Mg': c_mg, 'Sc': c_sc, 'Ti': c_ti, 'Zn': c_zn}, delta, omega)
+# --- ZOBRAZENÍ VÝSLEDKŮ A NAVÁŽKY ---
+if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
+    st.success("Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
+    st.divider()
+    
+    st.subheader("Výpočet laboratorní navážky")
+    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0)
+    
+    st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
+    for idx, res in enumerate(st.session_state['top_5_results']):
+        comp = res['comp']
+        d, o_sinter, o_base = res['props']
+        wt = atomic_to_weight(comp)
+        grams = calculate_grams(wt, total_mass)
+        
+        with st.expander(f"Varianta {idx + 1}: Mg {comp['Mg']} | Sc {comp['Sc']} | Ti {comp['Ti']} | Zn {comp['Zn']} (at. %)", expanded=(idx==0)):
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Hořčík (Mg)", f"{comp['Mg']} at. %", f"{wt['Mg']:.1f} wt. %", delta_color="off")
+            c2.metric("Skandium (Sc)", f"{comp['Sc']} at. %", f"{wt['Sc']:.1f} wt. %", delta_color="off")
+            c3.metric("Titan (Ti)", f"{comp['Ti']} at. %", f"{wt['Ti']:.1f} wt. %", delta_color="off")
+            c4.metric("Zinek (Zn)", f"{comp['Zn']} at. %", f"{wt['Zn']:.1f} wt. %", delta_color="off")
+            
+            st.write(f"**Vypočtené parametry:** Delta = **{d:.2f} %** | Omega (základní) = **{o_base:.2f}** | Omega (při {temp_c} °C) = **{o_sinter:.2f}**")
+            
+            # ---> TADY JE SPRÁVNÉ MÍSTO PRO PREDIKCI FÁZÍ <---
+            opt_im = predict_intermetallics(comp, d, o_sinter)
+            if opt_im:
+                st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
+                for f in opt_im:
+                    st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
+            # --------------------------------------------------
 
-st.divider()
-st.title("Pravděpodobnost vzniku případných intermetalik")
-opt_im = predict_intermetallics(comp, d, o_sinter)
+            st.markdown("##### Laboratorní navážka:")
+            st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
 
-if opt_im:
-    st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
-    for f in opt_im:
+elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
+    st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
+
+# ==========================================
+# ČÁST 3: POUŽITÉ VZORCE          
+#===========================================
+# ... zbytek tvého kódu s obrázky vzorců pokračuje normálně dál
+# --- ZOBRAZENÍ VÝSLEDKŮ A NAVÁŽKY ---
+if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
+    st.success("Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
+    st.divider()
+    
+    st.subheader("Výpočet laboratorní navážky")
+    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0)
+    
+    st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
+    for idx, res in enumerate(st.session_state['top_5_results']):
+        comp = res['comp']
+        d, o_sinter, o_base = res['props']
+        wt = atomic_to_weight(comp)
+        grams = calculate_grams(wt, total_mass)
+        
+        with st.expander(f"Varianta {idx + 1}: Mg {comp['Mg']} | Sc {comp['Sc']} | Ti {comp['Ti']} | Zn {comp['Zn']} (at. %)", expanded=(idx==0)):
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Hořčík (Mg)", f"{comp['Mg']} at. %", f"{wt['Mg']:.1f} wt. %", delta_color="off")
+            c2.metric("Skandium (Sc)", f"{comp['Sc']} at. %", f"{wt['Sc']:.1f} wt. %", delta_color="off")
+            c3.metric("Titan (Ti)", f"{comp['Ti']} at. %", f"{wt['Ti']:.1f} wt. %", delta_color="off")
+            c4.metric("Zinek (Zn)", f"{comp['Zn']} at. %", f"{wt['Zn']:.1f} wt. %", delta_color="off")
+            
+            st.write(f"**Vypočtené parametry:** Delta = **{d:.2f} %** | Omega (základní) = **{o_base:.2f}** | Omega (při {temp_c} °C) = **{o_sinter:.2f}**")
+            
+            # ---> TADY JE SPRÁVNÉ MÍSTO PRO PREDIKCI FÁZÍ <---
+            opt_im = predict_intermetallics(comp, d, o_sinter)
+            if opt_im:
+                st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
+                for f in opt_im:
+                    st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
+            # --------------------------------------------------
+
+            st.markdown("##### Laboratorní navážka:")
+            st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
+
+elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
+    st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
+
+# ==========================================
+# ČÁST 3: POUŽITÉ VZORCE          
+#===========================================
+# ... zbytek tvého kódu s obrázky vzorců pokračuje normálně dál
         st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
 
 # ==========================================
