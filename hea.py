@@ -255,7 +255,7 @@ def render_image(image_path, caption, height_px=120):
 
 # Zde můžeš změnit výšku všech obrázků najednou (v pixelech)
 VYSKA = 120 
-st.write("Parametr δ (Nesoulad atomů)"
+st.write("Parametr δ (Nesoulad atomů)")
 # --- SKUPINA 1: Obrázky 1 + 2 ---
 col_v1, col_v2 = st.columns(2)
 with col_v1: 
