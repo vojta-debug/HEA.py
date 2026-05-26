@@ -333,12 +333,6 @@ elif 'top_5_results' in st.session_state and not st.session_state['top_5_results
 # ==========================================
 # ČÁST 3: POUŽITÉ VZORCE          
 #===========================================
-# ... zbytek tvého kódu s obrázky vzorců pokračuje normálně dál
-        st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
-
-# ==========================================
-# ČÁST 3: POUŽITÉ VZORCE          
-#===========================================
 st.divider()
 st.title("Použité vzorce")
 #fotky
