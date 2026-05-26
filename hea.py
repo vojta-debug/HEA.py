@@ -134,7 +134,7 @@ else:
     col4.caption(f"Hmotnostní: **{wt_pct['Zn']:.1f} %**")
 
     if total_at != 100:
-        st.info(f"💡 Součet zadaných atomárních % je {total_at} %. Pro výpočet byly automaticky znormovány na 100 %.")
+        st.info(f"Součet zadaných atomárních % je {total_at} %. Pro výpočet byly automaticky znormovány na 100 %.")
 
     ds, dh, delta, omega = calculate_hea_properties(comp_fractions)
     
@@ -230,36 +230,56 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
 elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
     st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
 
+import base64
+
 # ==========================================
 # ČÁST 3: POUŽITÉ VZORCE          
 #===========================================
 st.divider()
 st.title("Použité vzorce")
 
+# Pomocná funkce, která načte obrázek z GitHubu a vnutí mu přesnou výšku
+def render_image(image_path, caption, height_px=120):
+    try:
+        with open(image_path, "rb") as f:
+            data = base64.b64encode(f.read()).decode("utf-8")
+        html = f'''
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <img src="data:image/png;base64,{data}" style="height: {height_px}px; width: auto; margin-bottom: 10px;">
+            <span style="font-size: 0.9em; color: #555;">{caption}</span>
+        </div>
+        '''
+        st.markdown(html, unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error(f"Chyba: Obrázek {image_path} nebyl nalezen.")
+
+# Zde můžeš změnit výšku všech obrázků najednou (v pixelech)
+VYSKA = 120 
+
 # --- SKUPINA 1: Obrázky 1 + 2 ---
 col_v1, col_v2 = st.columns(2)
-with col_v1:
-    st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)", use_container_width=True)
-with col_v2:
-    st.image("2.png", caption="Průměrný atomový poloměr ve směsi", use_container_width=True)
+with col_v1: 
+    render_image("1.png", "Parametr nesouladu velikostí atomů (co nejnižší)", VYSKA)
+with col_v2: 
+    render_image("2.png", "Průměrný atomový poloměr ve směsi", VYSKA)
 
 st.write("---")
 
 # --- SKUPINA 2: Obrázky 3 + 4 + 5 ---
 col_v3, col_v4, col_v5 = st.columns(3)
-with col_v3:
-    st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)", use_container_width=True)
-with col_v4:
-    st.image("4.png", caption="Směšovací entropie", use_container_width=True)
-with col_v5:
-    st.image("5.png", caption="Směšovací entalpie", use_container_width=True)
+with col_v3: 
+    render_image("3.png", "Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)", VYSKA)
+with col_v4: 
+    render_image("4.png", "Směšovací entropie", VYSKA)
+with col_v5: 
+    render_image("5.png", "Směšovací entalpie", VYSKA)
 
 st.write("---")
 st.write("Rozdíl v použité hodnotě teploty, viz níže - Omega (základní) vs Omega při ($T_{slinování}$)")
 
 # --- SKUPINA 3: Obrázky 6 + 7 ---
 col_v6, col_v7 = st.columns(2)
-with col_v6:
-    st.image("6.png", caption="Teplota", use_container_width=True)
-with col_v7:
-    st.image("7.png", caption="Teplota při slinování", use_container_width=True)
+with col_v6: 
+    render_image("6.png", "Teplota", VYSKA)
+with col_v7: 
+    render_image("7.png", "Teplota při slinování", VYSKA)
