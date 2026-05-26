@@ -6,10 +6,10 @@ st.set_page_config(page_title="HEA Kalkulačka & Optimalizátor", layout="center
 
 # --- DATA ---
 ELEMENT_DATA = {
-    'Mg': {'r': 1.60, 'Tm': 923},
-    'Sc': {'r': 1.62, 'Tm': 1814},
-    'Ti': {'r': 1.47, 'Tm': 1941},
-    'Zn': {'r': 1.34, 'Tm': 693}
+    'Mg': {'r': 1.50, 'Tm': 650},
+    'Sc': {'r': 1.60, 'Tm': 1541},
+    'Ti': {'r': 1.40, 'Tm': 1668},
+    'Zn': {'r': 1.35, 'Tm': 420}
 }
 
 MOLAR_MASS = {
@@ -20,9 +20,9 @@ MOLAR_MASS = {
 }
 
 MIXING_ENTHALPY = {
-    ('Mg', 'Sc'): 0, ('Mg', 'Ti'): 16, ('Mg', 'Zn'): -4,
-    ('Sc', 'Ti'): 0, ('Sc', 'Zn'): -13,
-    ('Ti', 'Zn'): -5
+    ('Mg', 'Sc'): -4.15, ('Mg', 'Ti'): -0.19, ('Mg', 'Zn'): -10.81,
+    ('Sc', 'Ti'): -1.54, ('Sc', 'Zn'): -36.57,
+    ('Ti', 'Zn'): -21.42
 }
 
 # --- FUNKCE ---
