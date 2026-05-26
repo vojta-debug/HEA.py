@@ -67,8 +67,8 @@ def calculate_grams(comp_wt, total_mass_g):
 # ==========================================
 # ČÁST 1: MANUÁLNÍ KALKULAČKA (Nezměněna)
 # ==========================================
-st.title("🔬 Část 1: HEA Kalkulačka")
-st.write("Zadejte atomární procenta (at. %). Aplikace automaticky dopočítá hmotnostní procenta (wt. %) a stabilitu.")
+st.title("HEA Kalkulačka")
+st.write("Zadejte atomární procenta (at. %).")
 
 col1, col2, col3, col4 = st.columns(4)
 with col1: c_mg = st.number_input("Mg (at. %)", min_value=0.0, max_value=100.0, value=25.0, step=1.0)
@@ -95,8 +95,8 @@ else:
     ds, dh, delta, omega = calculate_hea_properties(comp_fractions)
     
     res_col1, res_col2 = st.columns(2)
-    with res_col1: st.metric(label="Delta (δ)", value=f"{delta:.2f} %")
-    with res_col2: st.metric(label="Parametr Omega (Ω)", value=f"{omega:.2f}")
+    with res_col1: st.metric(label="Parametr δ (Rozdíl atomových poloměrů ↓, ≤6,6)", value=f"{delta:.2f} %")
+    with res_col2: st.metric(label="Parametr Ω (Termodynamický vliv entropie vůči entalpii ↑, ≥1,1)", value=f"{omega:.2f}")
 
 
 # ==========================================
@@ -106,7 +106,7 @@ st.divider()
 st.title("⚙️ Část 2: Hledání optimální slitiny")
 
 st.subheader("Parametry procesu a referenční slitina")
-st.write("Vložte parametry již fungující slitiny (bez Sc) a nastavte teplotu pro výpočet parametru Omega.")
+st.write("Vložte parametry již fungující slitiny (kolegův základ bez Sc) a nastavte teplotu pro výpočet parametru Omega.")
 
 c_ref1, c_ref2, c_ref3, c_ref4 = st.columns(4)
 with c_ref1: ref_mg = st.number_input("Ref. Mg (at. %)", value=40.0)
@@ -119,45 +119,62 @@ ref_comp = {'Mg': ref_mg/100, 'Sc': 0, 'Ti': ref_ti/100, 'Zn': ref_zn/100}
 _, _, ref_d, ref_o = calculate_hea_properties(ref_comp, temp_k)
 st.info(f"**Referenční hodnoty (při {temp_c} °C):** Delta = {ref_d:.2f} %, Omega = {ref_o:.2f}")
 
-st.write("""
-**Optimalizační kritéria:**
-1. Delta < 6.6 a Omega > 1.1.
-2. Minimálně 10 at. % od Sc, Ti i Zn.
-3. Nejvyšší podíl Mg, nejnižší podíl Sc.
-""")
+st.subheader("Zamknutí prvku a optimalizace")
+st.write("Vyberte prvek, jehož podíl chcete zafixovat. Aplikace dopočítá zbytek s cílem dosáhnout co nejvyšší stability (Max Omega, Min Delta).")
+
+col_lock1, col_lock2 = st.columns(2)
+with col_lock1:
+    locked_element = st.selectbox("Prvek k uzamčení:", ["Mg", "Sc", "Ti", "Zn"])
+with col_lock2:
+    # Maximální hodnota je 97, aby zbylo alespoň po 1 % na zbylé 3 prvky
+    locked_value = st.number_input(f"Zamknutá hodnota pro {locked_element} (at. %):", min_value=0.0, max_value=97.0, value=40.0, step=1.0)
 
 if st.button("🚀 Spustit optimalizaci"):
     with st.spinner("Iteruji přes všechny možné kombinace..."):
         valid_results = []
         
-        for sc in range(10, 71): 
-            for ti in range(10, 100 - sc - 10 + 1): 
-                for zn in range(10, 100 - sc - ti + 1): 
-                    mg = 100 - sc - ti - zn
-                    if mg <= 0: continue
+        # Identifikace zbývajících 3 prvků, které budeme iterovat
+        other_elements = [e for e in ["Mg", "Sc", "Ti", "Zn"] if e != locked_element]
+        el1, el2, el3 = other_elements
+        
+        remainder = int(100 - locked_value)
+        
+        # Iterujeme po celých procentech (zbylé prvky musí mít alespoň 1 at. %)
+        for v1 in range(1, remainder - 1): 
+            for v2 in range(1, remainder - v1): 
+                v3 = remainder - v1 - v2
+                if v3 < 1: continue
+                
+                # Sestavení zkušebního složení
+                comp_at = {locked_element: locked_value, el1: v1, el2: v2, el3: v3}
+                comp_frac = {k: v/100 for k, v in comp_at.items()}
+                
+                ds, dh, cur_delta, cur_omega = calculate_hea_properties(comp_frac, temp_k)
+                
+                # Zajímají nás pouze stabilní roztoky
+                if cur_delta < 6.6 and cur_omega > 1.1:
+                    # Hodnotící skóre: maximalizujeme Omegu a minimalizujeme Deltu
+                    score = cur_omega / (cur_delta + 1e-5)
                     
-                    comp = {'Mg': mg/100, 'Sc': sc/100, 'Ti': ti/100, 'Zn': zn/100}
-                    ds, dh, cur_delta, cur_omega = calculate_hea_properties(comp, temp_k)
-                    
-                    if cur_delta < 6.6 and cur_omega > 1.1:
-                        score = mg - (sc * 10) 
-                        valid_results.append({
-                            'comp': {'Mg': mg, 'Sc': sc, 'Ti': ti, 'Zn': zn},
-                            'props': (cur_delta, cur_omega),
-                            'score': score
-                        })
+                    valid_results.append({
+                        'comp': comp_at,
+                        'props': (cur_delta, cur_omega),
+                        'score': score
+                    })
 
-        # Seřazení výsledků podle skóre a uložení do session_state (aby nezmizely při zadání navážky)
+        # Seřazení výsledků podle skóre (od nejlepšího) a uložení top 5 do paměti
         valid_results.sort(key=lambda x: x['score'], reverse=True)
         st.session_state['top_5_results'] = valid_results[:5]
 
 # --- ZOBRAZENÍ VÝSLEDKŮ A NAVÁŽKY ---
 if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
-    st.success("🎉 Nalezeny vyhovující kombinace!")
-    st.subheader("Výpočet navážky")
+    st.success("🎉 Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
+    st.divider()
+    
+    st.subheader("Výpočet laboratorní navážky")
     total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=50.0, step=1.0)
     
-    st.markdown("### Top 5 doporučených složení")
+    st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
     for idx, res in enumerate(st.session_state['top_5_results']):
         comp = res['comp']
         d, o = res['props']
@@ -179,4 +196,4 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
             st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
 
 elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
-    st.error("❌ Při zadaných kritériích neexistuje žádná vyhovující kombinace.")
+    st.error("❌ Při tomto uzamčení prvku a zadaných kritériích stability (Delta < 6.6, Omega > 1.1) neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
