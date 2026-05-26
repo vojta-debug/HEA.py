@@ -256,7 +256,7 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
     st.divider()
     
     st.subheader("Výpočet laboratorní navážky")
-    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0)
+    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0, key="navazka_cast2")
     
     st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
     for idx, res in enumerate(st.session_state['top_5_results']):
