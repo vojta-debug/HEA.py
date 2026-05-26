@@ -2,9 +2,9 @@ import streamlit as st
 import numpy as np
 
 # --- NASTAVENÍ STRÁNKY ---
-st.set_page_config(page_title="HEA Kalkulačka & Optimalizátor", layout="centered")
+st.set_page_config(page_title="HEA Kalkulačka & Optimalizátor", layout="wide")
 
-# --- DATA ---
+# --- DATA --- z pubchem
 ELEMENT_DATA = {
     'Mg': {'r': 1.50, 'Tm': 650},
     'Sc': {'r': 1.60, 'Tm': 1541},
@@ -18,7 +18,7 @@ MOLAR_MASS = {
     'Ti': 47.867,
     'Zn': 65.380
 }
-
+# z open quantum matherials database https://oqmd.org/materials/composition/Ti%20Zn
 MIXING_ENTHALPY = {
     ('Mg', 'Sc'): -4.15, ('Mg', 'Ti'): -0.19, ('Mg', 'Zn'): -10.81,
     ('Sc', 'Ti'): -1.54, ('Sc', 'Zn'): -36.57,
@@ -117,7 +117,7 @@ with col_lock3:
 
 temp_k = temp_c + 273.15
 
-if st.button("🚀 Spustit optimalizaci"):
+if st.button("Spustit optimalizaci"):
     with st.spinner("Iteruji přes všechny možné kombinace..."):
         valid_results = []
         
@@ -126,10 +126,10 @@ if st.button("🚀 Spustit optimalizaci"):
         
         remainder = int(100 - locked_value)
         
-        for v1 in range(1, remainder - 1): 
-            for v2 in range(1, remainder - v1): 
+        for v1 in range(10, remainder - 19): 
+            for v2 in range(10, remainder - v1 - 9): 
                 v3 = remainder - v1 - v2
-                if v3 < 1: continue
+                if v3 < 10: continue
                 
                 comp_at = {locked_element: locked_value, el1: v1, el2: v2, el3: v3}
                 comp_frac = {k: v/100 for k, v in comp_at.items()}
@@ -152,7 +152,7 @@ if st.button("🚀 Spustit optimalizaci"):
 
 # --- ZOBRAZENÍ VÝSLEDKŮ A NAVÁŽKY ---
 if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
-    st.success("🎉 Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
+    st.success("Nalezeny vyhovující kombinace s optimalizovanou stabilitou!")
     st.divider()
     
     st.subheader("Výpočet laboratorní navážky")
@@ -178,4 +178,4 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
             st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
 
 elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
-    st.error("❌ Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
+    st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
