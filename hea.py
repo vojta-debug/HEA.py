@@ -63,9 +63,63 @@ def atomic_to_weight(comp_at):
 def calculate_grams(comp_wt, total_mass_g):
     return {el: (comp_wt[el] / 100) * total_mass_g for el in comp_wt}
 
+def predict_intermetallics(comp_at, delta, omega):
+    """Analyzuje přítomné prvky a predikuje riziko vzniku intermetalik."""
+    # Databáze pravděpodobných fází na základě binárních diagramů
+    INTERMETALLIC_DATABASE = {
+        ('Sc', 'Zn'): {
+            'enthalpy': -13,
+            'phases': ["ScZn", "ScZn₂", "ScZn₁₂", "Sc₃Zn₁₇"],
+            'desc': "Velmi silná afinitní vazba. Při nižších teplotách slinování je vznik těchto fází téměř jistý."
+        },
+        ('Ti', 'Zn'): {
+            'enthalpy': -5,
+            'phases': ["TiZn", "TiZn₂", "TiZn₃", "Ti₂Zn₃"],
+            'desc': "Mírná tendence k tvorbě intermetalik, zejména pokud je v systému lokální přebytek zinku."
+        },
+        ('Mg', 'Zn'): {
+            'enthalpy': -4,
+            'phases': ["MgZn", "MgZn₂", "Mg₂Zn₃", "Mg₇Zn₃"],
+            'desc': "Nízká teplota tání těchto fází může způsobit vznik křehkých eutektických struktur na hranicích zrn."
+        },
+        ('Mg', 'Ti'): {
+            'enthalpy': 16,
+            'phases': ["Nemá (Segregace fází)"],
+            'desc': "Extrémně vysoká kladná entalpie. Tyto dva prvky se nesnáší a budou mít tendenci se od sebe oddělovat (likvační mez)."
+        },
+        ('Mg', 'Sc'): {
+            'enthalpy': 0,
+            'phases': ["Mg-Sc (Spojité roztoky)"],
+            'desc': "Ideální chování, náchylnost k tvorbě intermetalik je minimální."
+        },
+        ('Sc', 'Ti'): {
+            'enthalpy': -1.54,
+            'phases': ["Sc-Ti (Omezený tuhý roztok)"],
+            'desc': "Prvky jsou strukturálně blízké, riziko tvorby křehkých intermetalických fází je velmi nízké."
+        }
+    }
+
+    present_elements = [el for el, val in comp_at.items() if val >= 5.0]
+    predictions = []
+    
+    # Prohledáme všechny dvojice prvků, které mají v materiálu zastoupení aspoň 5 %
+    for i in range(len(present_elements)):
+        for j in range(i + 1, len(present_elements)):
+            pair = tuple(sorted((present_elements[i], present_elements[j])))
+            if pair in INTERMETALLIC_DATABASE:
+                data = INTERMETALLIC_DATABASE[pair]
+                # Riziko stoupá, pokud celková stabilita HEA klesá (vysoká delta nebo nízká omega)
+                if data['enthalpy'] < -3 and (delta > 5.0 or omega < 1.5):
+                    predictions.append({
+                        'pár': f"{pair[0]} - {pair[1]}",
+                        'fáze': ", ".join(data['phases']),
+                        'popis': data['desc'],
+                        'entalpie': data['enthalpy']
+                    })
+    return predictions
 
 # ==========================================
-# ČÁST 1: MANUÁLNÍ KALKULAČKA (Nezměněna)
+# ČÁST 1: MANUÁLNÍ KALKULAČKA
 # ==========================================
 st.title("HEA Kalkulačka")
 st.write("Zadejte atomární procenta (at. %).")
@@ -102,7 +156,7 @@ else:
 # ČÁST 2: AUTOMATICKÁ OPTIMALIZACE
 # ==========================================
 st.divider()
-st.title("⚙️ Část 2: Hledání optimální slitiny")
+st.title("Část 2: Hledání optimální slitiny")
 
 st.subheader("Nastavení optimalizace")
 st.write("Vyberte prvek k zafixování a nastavte teplotu slinování. Aplikace dopočítá zbytek pro dosažení nejvyšší stability (Max Omega, Min Delta).")
@@ -156,7 +210,7 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
     st.divider()
     
     st.subheader("Výpočet laboratorní navážky")
-    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=50.0, step=1.0)
+    total_mass = st.number_input("Zadejte celkovou navážku vzorku (g):", min_value=0.1, value=5.0, step=1.0)
     
     st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
     for idx, res in enumerate(st.session_state['top_5_results']):
@@ -180,8 +234,23 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
 elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
     st.error("Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
 
-#použité rovnice
-st.write("Použité vzorce")
+# Zavolání nové funkce (dosadíš do ní aktuální složení, deltu a omegu)
+im_fases = predict_intermetallics({'Mg': c_mg, 'Sc': c_sc, 'Ti': c_ti, 'Zn': c_zn}, delta, omega)
+
+st.divider()
+st.title("Pravděpodobnost vzniku případných intermetalik")
+if im_fases:
+    st.warning("⚠️ **Detekováno riziko sekundárních fází:**")
+    for f in im_fases:
+        st.write(f"**Subsystém {f['pár']}:** Může tvořit fáze `{f['fáze']}` (ΔH_mix = {f['entalpie']} kJ/mol). *{f['popis']}*")
+else:
+    st.success("✅ Podle strukturních kritérií by měla slitina zůstat čistým jednofázovým tuhým roztokem.")
+
+# ==========================================
+# ČÁST 3: POUŽITÉ VZORCE          
+#===========================================
+st.divider()
+st.title("Použité vzorce")
 #fotky
 st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)")
 st.image("2.png", caption="Průměrný atomový poloměr ve směsi")
