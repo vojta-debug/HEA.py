@@ -220,7 +220,7 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
             
             opt_im = predict_intermetallics(comp, d, o_sinter)
             if opt_im:
-                st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
+                st.markdown("** Specifické fázové oblasti detekované v diagramech:**")
                 for f in opt_im:
                     st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
 
@@ -235,11 +235,41 @@ elif 'top_5_results' in st.session_state and not st.session_state['top_5_results
 #===========================================
 st.divider()
 st.title("Použité vzorce")
-st.image("1.png", caption="Parametr nesouladu velikostí atomů (co nejnižší)")
-st.image("2.png", caption="Průměrný atomový poloměr ve směsi")
-st.image("3.png", caption="Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)")
-st.image("4.png", caption="Směšovací entropie")
-st.image("5.png", caption="Směšovací entalpie")
+
+# Definujeme jednotnou výšku pro všechny obrázky v pixelech (např. 150px nebo 180px)
+vyska_obrazku = 150
+
+col_v1, col_v2, col_v3 = st.columns(3)
+with col_v1:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/1.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Parametr nesouladu velikostí atomů (co nejnižší)")
+
+with col_v2:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/2.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Průměrný atomový poloměr ve směsi")
+
+with col_v3:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/3.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Termodynamický vliv entropie vůči entalpii pro tvorbu tuhého roztoku (co nejvyšší)")
+
+st.write("---")
+
+col_v4, col_v5 = st.columns(2)
+with col_v4:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/4.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Směšovací entropie")
+
+with col_v5:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/5.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Směšovací entalpie")
+
 st.write("Rozdíl v použité hodnotě teploty, viz níže - Omega (základní) vs Omega při ($T_{slinování}$)")
-st.image("6.png", caption="Teplota")
-st.image("7.png", caption="Teplota při slinování")
+
+col_v6, col_v7 = st.columns(2)
+with col_v6:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/6.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Teplota")
+
+with col_v7:
+    st.markdown(f'<div style="height:{vyska_obrazku}px; display:flex; align-items:center; justify-content:center;"><img src="app/static/7.png" style="max-height:100%; max-width:100%;"></div>', unsafe_allow_html=True)
+    st.caption("Teplota při slinování")
