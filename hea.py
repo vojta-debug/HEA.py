@@ -98,71 +98,55 @@ else:
     with res_col1: st.metric(label="Parametr δ (Rozdíl atomových poloměrů ↓, ≤6,6)", value=f"{delta:.2f} %")
     with res_col2: st.metric(label="Parametr Ω (Termodynamický vliv entropie vůči entalpii ↑, ≥1,1)", value=f"{omega:.2f}")
 
-
 # ==========================================
 # ČÁST 2: AUTOMATICKÁ OPTIMALIZACE
 # ==========================================
 st.divider()
 st.title("⚙️ Část 2: Hledání optimální slitiny")
 
-st.subheader("Parametry procesu a referenční slitina")
-st.write("Vložte parametry již fungující slitiny (kolegův základ bez Sc) a nastavte teplotu pro výpočet parametru Omega.")
+st.subheader("Nastavení optimalizace")
+st.write("Vyberte prvek k zafixování a nastavte teplotu slinování. Aplikace dopočítá zbytek pro dosažení nejvyšší stability (Max Omega, Min Delta).")
 
-c_ref1, c_ref2, c_ref3, c_ref4 = st.columns(4)
-with c_ref1: ref_mg = st.number_input("Ref. Mg (at. %)", value=40.0)
-with c_ref2: ref_ti = st.number_input("Ref. Ti (at. %)", value=30.0)
-with c_ref3: ref_zn = st.number_input("Ref. Zn (at. %)", value=30.0)
-with c_ref4: temp_c = st.number_input("Teplota slinování (°C)", value=500.0, step=50.0)
-
-temp_k = temp_c + 273.15
-ref_comp = {'Mg': ref_mg/100, 'Sc': 0, 'Ti': ref_ti/100, 'Zn': ref_zn/100}
-_, _, ref_d, ref_o = calculate_hea_properties(ref_comp, temp_k)
-st.info(f"**Referenční hodnoty (při {temp_c} °C):** Delta = {ref_d:.2f} %, Omega = {ref_o:.2f}")
-
-st.subheader("Zamknutí prvku a optimalizace")
-st.write("Vyberte prvek, jehož podíl chcete zafixovat. Aplikace dopočítá zbytek s cílem dosáhnout co nejvyšší stability (Max Omega, Min Delta).")
-
-col_lock1, col_lock2 = st.columns(2)
+col_lock1, col_lock2, col_lock3 = st.columns(3)
 with col_lock1:
     locked_element = st.selectbox("Prvek k uzamčení:", ["Mg", "Sc", "Ti", "Zn"])
 with col_lock2:
-    # Maximální hodnota je 97, aby zbylo alespoň po 1 % na zbylé 3 prvky
-    locked_value = st.number_input(f"Zamknutá hodnota pro {locked_element} (at. %):", min_value=0.0, max_value=97.0, value=40.0, step=1.0)
+    locked_value = st.number_input(f"Hodnota pro {locked_element} (at. %):", min_value=0.0, max_value=97.0, value=40.0, step=1.0)
+with col_lock3:
+    temp_c = st.number_input("Teplota slinování (°C)", value=500.0, step=50.0)
+
+temp_k = temp_c + 273.15
 
 if st.button("🚀 Spustit optimalizaci"):
     with st.spinner("Iteruji přes všechny možné kombinace..."):
         valid_results = []
         
-        # Identifikace zbývajících 3 prvků, které budeme iterovat
         other_elements = [e for e in ["Mg", "Sc", "Ti", "Zn"] if e != locked_element]
         el1, el2, el3 = other_elements
         
         remainder = int(100 - locked_value)
         
-        # Iterujeme po celých procentech (zbylé prvky musí mít alespoň 1 at. %)
         for v1 in range(1, remainder - 1): 
             for v2 in range(1, remainder - v1): 
                 v3 = remainder - v1 - v2
                 if v3 < 1: continue
                 
-                # Sestavení zkušebního složení
                 comp_at = {locked_element: locked_value, el1: v1, el2: v2, el3: v3}
                 comp_frac = {k: v/100 for k, v in comp_at.items()}
                 
-                ds, dh, cur_delta, cur_omega = calculate_hea_properties(comp_frac, temp_k)
+                # Výpočet pro slinovací teplotu i pro základní teplotu (Tm_avg)
+                ds, dh, cur_delta, cur_omega_sinter = calculate_hea_properties(comp_frac, temp_k)
+                _, _, _, cur_omega_base = calculate_hea_properties(comp_frac, None)
                 
-                # Zajímají nás pouze stabilní roztoky
-                if cur_delta < 6.6 and cur_omega > 1.1:
-                    # Hodnotící skóre: maximalizujeme Omegu a minimalizujeme Deltu
-                    score = cur_omega / (cur_delta + 1e-5)
+                if cur_delta < 6.6 and cur_omega_sinter > 1.1:
+                    score = cur_omega_sinter / (cur_delta + 1e-5)
                     
                     valid_results.append({
                         'comp': comp_at,
-                        'props': (cur_delta, cur_omega),
+                        'props': (cur_delta, cur_omega_sinter, cur_omega_base),
                         'score': score
                     })
 
-        # Seřazení výsledků podle skóre (od nejlepšího) a uložení top 5 do paměti
         valid_results.sort(key=lambda x: x['score'], reverse=True)
         st.session_state['top_5_results'] = valid_results[:5]
 
@@ -177,23 +161,21 @@ if 'top_5_results' in st.session_state and st.session_state['top_5_results']:
     st.markdown("### Top 5 doporučených složení (seřazeno podle stability)")
     for idx, res in enumerate(st.session_state['top_5_results']):
         comp = res['comp']
-        d, o = res['props']
+        d, o_sinter, o_base = res['props']
         wt = atomic_to_weight(comp)
         grams = calculate_grams(wt, total_mass)
         
         with st.expander(f"Varianta {idx + 1}: Mg {comp['Mg']} | Sc {comp['Sc']} | Ti {comp['Ti']} | Zn {comp['Zn']} (at. %)", expanded=(idx==0)):
-            # Tabulka vlastností
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Hořčík (Mg)", f"{comp['Mg']} at. %", f"{wt['Mg']:.1f} wt. %", delta_color="off")
             c2.metric("Skandium (Sc)", f"{comp['Sc']} at. %", f"{wt['Sc']:.1f} wt. %", delta_color="off")
             c3.metric("Titan (Ti)", f"{comp['Ti']} at. %", f"{wt['Ti']:.1f} wt. %", delta_color="off")
             c4.metric("Zinek (Zn)", f"{comp['Zn']} at. %", f"{wt['Zn']:.1f} wt. %", delta_color="off")
             
-            st.write(f"**Vypočtené parametry:** Delta = {d:.2f} %, Omega (při {temp_c} °C) = {o:.2f}")
+            st.write(f"**Vypočtené parametry:** Delta = **{d:.2f} %** | Omega (základní) = **{o_base:.2f}** | Omega (při {temp_c} °C) = **{o_sinter:.2f}**")
             
-            # Navážka v gramech
             st.markdown("##### Laboratorní navážka:")
             st.info(f"**Mg:** {grams['Mg']:.2f} g &nbsp;|&nbsp; **Sc:** {grams['Sc']:.2f} g &nbsp;|&nbsp; **Ti:** {grams['Ti']:.2f} g &nbsp;|&nbsp; **Zn:** {grams['Zn']:.2f} g")
 
 elif 'top_5_results' in st.session_state and not st.session_state['top_5_results']:
-    st.error("❌ Při tomto uzamčení prvku a zadaných kritériích stability (Delta < 6.6, Omega > 1.1) neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
+    st.error("❌ Při tomto uzamčení prvku a zadaných kritériích stability neexistuje žádná vyhovující kombinace. Zkuste hodnotu změnit.")
