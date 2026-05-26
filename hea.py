@@ -63,60 +63,76 @@ def atomic_to_weight(comp_at):
 def calculate_grams(comp_wt, total_mass_g):
     return {el: (comp_wt[el] / 100) * total_mass_g for el in comp_wt}
 
-def predict_intermetallics(comp_at, delta, omega):
-    """Analyzuje přítomné prvky a predikuje riziko vzniku intermetalik."""
-    # Databáze pravděpodobných fází na základě binárních diagramů
-    INTERMETALLIC_DATABASE = {
-        ('Sc', 'Zn'): {
-            'enthalpy': -13,
-            'phases': ["ScZn", "ScZn₂", "ScZn₁₂", "Sc₃Zn₁₇"],
-            'desc': "Velmi silná afinitní vazba. Při nižších teplotách slinování je vznik těchto fází téměř jistý."
-        },
-        ('Ti', 'Zn'): {
-            'enthalpy': -5,
-            'phases': ["TiZn", "TiZn₂", "TiZn₃", "Ti₂Zn₃"],
-            'desc': "Mírná tendence k tvorbě intermetalik, zejména pokud je v systému lokální přebytek zinku."
-        },
-        ('Mg', 'Zn'): {
-            'enthalpy': -4,
-            'phases': ["MgZn", "MgZn₂", "Mg₂Zn₃", "Mg₇Zn₃"],
-            'desc': "Nízká teplota tání těchto fází může způsobit vznik křehkých eutektických struktur na hranicích zrn."
-        },
-        ('Mg', 'Ti'): {
-            'enthalpy': 16,
-            'phases': ["Nemá (Segregace fází)"],
-            'desc': "Extrémně vysoká kladná entalpie. Tyto dva prvky se nesnáší a budou mít tendenci se od sebe oddělovat (likvační mez)."
-        },
-        ('Mg', 'Sc'): {
-            'enthalpy': 0,
-            'phases': ["Mg-Sc (Spojité roztoky)"],
-            'desc': "Ideální chování, náchylnost k tvorbě intermetalik je minimální."
-        },
-        ('Sc', 'Ti'): {
-            'enthalpy': -1.54,
-            'phases': ["Sc-Ti (Omezený tuhý roztok)"],
-            'desc': "Prvky jsou strukturálně blízké, riziko tvorby křehkých intermetalických fází je velmi nízké."
-        }
-    }
-
-    present_elements = [el for el, val in comp_at.items() if val >= 5.0]
+def predict_intermetallics_advanced(comp_at, delta, omega):
+    """
+    Pokročilá predikce konkrétních fází na základě stechiometrických poměrů
+    v jednotlivých oblastech binárních fázových diagramů.
+    """
     predictions = []
     
-    # Prohledáme všechny dvojice prvků, které mají v materiálu zastoupení aspoň 5 %
-    for i in range(len(present_elements)):
-        for j in range(i + 1, len(present_elements)):
-            pair = tuple(sorted((present_elements[i], present_elements[j])))
-            if pair in INTERMETALLIC_DATABASE:
-                data = INTERMETALLIC_DATABASE[pair]
-                # Riziko stoupá, pokud celková stabilita HEA klesá (vysoká delta nebo nízká omega)
-                if data['enthalpy'] < -3 and (delta > 5.0 or omega < 1.5):
-                    predictions.append({
-                        'pár': f"{pair[0]} - {pair[1]}",
-                        'fáze': ", ".join(data['phases']),
-                        'popis': data['desc'],
-                        'entalpie': data['enthalpy']
-                    })
-    return predictions
+    # 1. SUBSYSTÉM Sc - Zn (Velmi silná tendence)
+    if comp_at['Sc'] > 3.0 and comp_at['Zn'] > 3.0:
+        ratio_zn_sc = comp_at['Zn'] / (comp_at['Sc'] + 1e-5)
+        
+        if 0.8 <= ratio_zn_sc <= 1.3:
+            predictions.append({
+                'pár': "Sc - Zn", 'fáze': "ScZn (ekviatomární)",
+                'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Poloha v diagramu odpovídá kubické fázi (typ CsCl). Mírná křehkost."
+            })
+        elif 1.7 <= ratio_zn_sc <= 2.3:
+            predictions.append({
+                'pár': "Sc - Zn", 'fáze': "ScZn₂ (Lavesova fáze)",
+                'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Nacházíte se v oblasti vysoce křehké hexagonální Lavesovy fáze."
+            })
+        elif 5.0 <= ratio_zn_sc <= 6.5:
+            predictions.append({
+                'pár': "Sc - Zn", 'fáze': "Sc₃Zn₁₇ nebo ScZn₁₂",
+                'pozn': f"Poměr Zn/Sc je {ratio_zn_sc:.2f}. Vysoký přebytek zinku, precipitace intermetalik bohatých na Zn na hranicích zrn."
+            })
+
+    # 2. SUBSYSTÉM Mg - Zn (Nízkotající fáze)
+    if comp_at['Mg'] > 3.0 and comp_at['Zn'] > 3.0:
+        ratio_zn_mg = comp_at['Zn'] / (comp_at['Mg'] + 1e-5)
+        
+        if 0.8 <= ratio_zn_mg <= 1.2:
+            predictions.append({
+                'pár': "Mg - Zn", 'fáze': "MgZn",
+                'pozn': f"Poměr Zn/Mg je {ratio_zn_mg:.2f}. Oblast střední stability."
+            })
+        elif 1.8 <= ratio_zn_mg <= 2.2:
+            predictions.append({
+                'pár': "Mg - Zn", 'fáze': "MgZn₂",
+                'pozn': f"Poměr Zn/Mg je {ratio_zn_mg:.2f}. Stabilní precipitát Lavesovy fáze, kritické zpevnění/křehnutí."
+            })
+
+    # 3. SUBSYSTÉM Ti - Zn
+    if comp_at['Ti'] > 3.0 and comp_at['Zn'] > 3.0:
+        ratio_zn_ti = comp_at['Zn'] / (comp_at['Ti'] + 1e-5)
+        if 1.8 <= ratio_zn_ti <= 3.2:
+            predictions.append({
+                'pár': "Ti - Zn", 'fáze': "TiZn₂ nebo TiZn₃",
+                'pozn': f"Poměr Zn/Ti je {ratio_zn_ti:.2f}. Možný vznik jehlicovitých intermetalik snižujících tažnost."
+            })
+
+    # 4. SUBSYSTÉM Mg - Ti (Imiscibilita / Segregace)
+    if comp_at['Mg'] > 5.0 and comp_at['Ti'] > 5.0:
+        # Vzhledem k vysoké kladné entalpii (+16 kJ/mol) netvoří intermetalika, ale vytlačují se
+        if delta > 6.0 or omega < 1.0:
+            predictions.append({
+                'pár': "Mg - Ti", 'fáze': "Makroskopická segregace (likvace)",
+                'pozn': "Prvky se nesnášejí. Hrozí vznik oddělených oblastí čistého Mg a čistého Ti během slinování."
+            })
+
+    # Filtrování: Intermetalika se reálně vyloučí pouze tehdy, pokud celková stabilita HEA klesne
+    # (Tzn. buď je příliš velký mřížkový nesoulad delta, nebo příliš nízká teplota/entropie omega)
+    actual_risks = []
+    for p in predictions:
+        # Pokud je systém na hranici stability tuhého roztoku
+        if delta > 5.5 or omega < 1.5:
+            actual_results = p
+            actual_risks.append(actual_results)
+            
+    return actual_risks
 
 # ==========================================
 # ČÁST 1: MANUÁLNÍ KALKULAČKA
@@ -239,12 +255,12 @@ im_fases = predict_intermetallics({'Mg': c_mg, 'Sc': c_sc, 'Ti': c_ti, 'Zn': c_z
 
 st.divider()
 st.title("Pravděpodobnost vzniku případných intermetalik")
-if im_fases:
-    st.warning("⚠️ **Detekováno riziko sekundárních fází:**")
-    for f in im_fases:
-        st.write(f"**Subsystém {f['pár']}:** Může tvořit fáze `{f['fáze']}` (ΔH_mix = {f['entalpie']} kJ/mol). *{f['popis']}*")
-else:
-    st.success("✅ Podle strukturních kritérií by měla slitina zůstat čistým jednofázovým tuhým roztokem.")
+opt_im = predict_intermetallics_advanced(comp, d, o_sinter)
+
+if opt_im:
+    st.markdown("**🔍 Specifické fázové oblasti detekované v diagramech:**")
+    for f in opt_im:
+        st.caption(f"• **{f['pár']}:** Očekávaná fáze `{f['fáze']}`. {f['pozn']}")
 
 # ==========================================
 # ČÁST 3: POUŽITÉ VZORCE          
