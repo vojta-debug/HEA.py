@@ -275,7 +275,7 @@ with col_v5:
     render_image("5.png", "Směšovací entalpie", VYSKA)
 
 st.write("---")
-st.write("Rozdíl v použité hodnotě teploty, viz níže - Omega (základní) vs Omega při ($T_{slinování}$)")
+st.write("Rozdíl v použité hodnotě teploty, viz výše - Omega (základní) vs Omega při ($T_{slinování}$)")
 
 # --- SKUPINA 3: Obrázky 6 + 7 ---
 col_v6, col_v7 = st.columns(2)
